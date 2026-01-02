@@ -1,7 +1,6 @@
-// ✅ KEEP your existing step import
 import { retrieveTitle } from "./steps/retrieveTitle.js";
-// ✅ ADD the new step import
 import { generateTrailerText } from "./steps/generateTrailerText.js";
+import { checkTrailerText } from "./steps/checkTrailerText.js";
 
 export async function runOrchestrator(payload = {}) {
   console.log("Orchestrator started", {
@@ -16,8 +15,12 @@ export async function runOrchestrator(payload = {}) {
   // Pass the title we just got into the next function
   const trailerText = await generateTrailerText(title);
 
+  // 3. Check/Rephrase Text (Zap Step 4)
+  const finalTrailerText = await checkTrailerText(rawTrailerText);
+
   console.log("Orchestrator completed", {
     title,
+    finalTrailerText,
     trailerText,
     timestamp: new Date().toISOString(),
   });
