@@ -46,7 +46,6 @@ export async function generateAudio({ text, tone }) {
   
   await storage.bucket(bucketName).upload(tempFilePath, {
     destination: fileName,
-    public: true, // Makes the file publicly accessible
     metadata: {
       contentType: "audio/wav",
       cacheControl: "public, max-age=31536000",
