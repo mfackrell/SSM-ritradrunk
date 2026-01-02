@@ -1,14 +1,20 @@
 import { retrieveTitle } from "./steps/retrieveTitle.js";
 
-export async function runOrchestrator(payload) {
-  console.log("Orchestrator started", {
-    source: payload?.source || "unknown",
-    timestamp: new Date().toISOString(),
-  });
+export async function runOrchestrator(payload = {}) {
+  const context = {
+    source: payload.source || "unknown",
+    startedAt: new Date().toISOString()
+  };
 
+  console.log("Orchestrator started", context);
+
+  // STEP 1 — Retrieve Title (Zap Step #2 equivalent)
   const title = await retrieveTitle();
 
-  console.log("Orchestrator received title:", title);
+  console.log("Retrieved title", { title });
 
-  return { title };
+  return {
+    status: "completed",
+    title
+  };
 }
