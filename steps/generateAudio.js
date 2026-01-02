@@ -22,7 +22,7 @@ export async function generateAudio({ tone, text }) {
       speechConfig: {
         voiceConfig: {
           prebuiltVoiceConfig: {
-            voiceName: "Zubenelgenubi",
+            voiceName: "Kore",
           },
         },
       },
