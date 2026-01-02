@@ -12,17 +12,22 @@ app.get("/", (req, res) => {
 });
 
 app.get("/health", (req, res) => {
-  res.status(200).send("ok");
+  res.json({
+    status: "ok",
+    service: "ritra-orchestrator",
+    timestamp: new Date().toISOString()
+  });
 });
 
 app.post("/run", async (req, res) => {
-  console.log("Run invoked", {
+  console.log("RUN invoked", {
+    source: req.body?.source || "unknown",
     timestamp: new Date().toISOString()
   });
 
-  res.json({
+  res.status(200).json({
     status: "accepted",
-    message: "Run triggered"
+    message: "Run acknowledged"
   });
 });
 
