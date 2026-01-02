@@ -4,6 +4,7 @@ import { checkTrailerText } from "./steps/checkTrailerText.js";
 import { getStoryTone } from "./steps/storyTone.js";
 import { generateAudio } from "./steps/generateAudio.js";
 import { generateImagePrompts } from "./steps/generateImagePrompts.js";
+import { generateImages } from "./steps/generateImages.js";
 
 export async function runOrchestrator(payload = {}) {
   console.log("Orchestrator started", {
@@ -30,6 +31,10 @@ export async function runOrchestrator(payload = {}) {
   // --- Step 6: Generate Image Prompts (NEW) ---
   // We pass the final text and ask for 5 sections (default)
   const imagePrompts = await generateImagePrompts(finalTrailerText, 5);
+
+  // 6. Generate Images (NEW STEP)
+  // This takes the split text and returns real URLs: { section_1: "https://...", ... }
+  const imageUrls = await generateImages(imagePrompts);
   
   console.log("Orchestrator completed", {
     title,
@@ -48,6 +53,7 @@ export async function runOrchestrator(payload = {}) {
     storyTone,
     audio,
     imagePrompts,
+    imageUrls,
     trailerText
   };
 }
