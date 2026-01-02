@@ -24,8 +24,8 @@ export async function runOrchestrator(payload = {}) {
   const storyTone = await getStoryTone(title);
   
   // 5. Call Gemini to generate audio file
-  generateAudio({ text: finalTrailerText, tone: storyTone });
-
+  const audio = await generateAudio({ text: finalTrailerText, tone: storyTone });
+  
   console.log("Orchestrator completed", {
     title,
     finalTrailerText,
