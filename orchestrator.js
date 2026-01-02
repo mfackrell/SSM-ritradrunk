@@ -1,6 +1,8 @@
 import { retrieveTitle } from "./steps/retrieveTitle.js";
 import { generateTrailerText } from "./steps/generateTrailerText.js";
 import { checkTrailerText } from "./steps/checkTrailerText.js";
+import { getStoryTone } from "./steps/storyTone.js";
+
 
 export async function runOrchestrator(payload = {}) {
   console.log("Orchestrator started", {
@@ -18,16 +20,22 @@ export async function runOrchestrator(payload = {}) {
   // 3. Check/Rephrase Text (Zap Step 4)
   const finalTrailerText = await checkTrailerText(trailerText);
 
+  // 4. Story tone (single word)
+  const storyTone = await getStoryTone(title);
+
   console.log("Orchestrator completed", {
     title,
     finalTrailerText,
     trailerText,
+    storyTone,
     timestamp: new Date().toISOString(),
   });
 
   return {
     status: "completed",
     title,
+    finalTrailerText,
+    storyTone,
     trailerText
   };
 }
