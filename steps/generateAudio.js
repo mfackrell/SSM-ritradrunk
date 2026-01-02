@@ -18,8 +18,13 @@ export async function generateAudio({ tone, text }) {
   const result = await model.generateContent({
     contents: [{ role: "user", parts: [{ text: prompt }] }],
     generationConfig: {
-      audio: {
-        voice: "Zubenelgenubi", // matches Zap
+      responseModalities: ["AUDIO"],
+      speechConfig: {
+        voiceConfig: {
+          prebuiltVoiceConfig: {
+            voiceName: "Zubenelgenubi",
+          },
+        },
       },
     },
   });
