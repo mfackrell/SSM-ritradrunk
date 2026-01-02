@@ -10,7 +10,7 @@ export async function generateImages(promptSections) {
   console.log("Starting Sequential Image Generation (Daisy Chain)...");
 
   // Use Imagen 3 model
-  const model = genAI.getGenerativeModel({ model: "imagen-3.0-generate-001" });
+  const model = genAI.getGenerativeModel({ model: "gemini-3-pro-image" });
 
   const results = {};
   let lastImageBuffer = null;
@@ -21,7 +21,7 @@ export async function generateImages(promptSections) {
       const isFirstImage = loopIndex === 0;
       
       // LOGIC: Image 1 is the "Anchor". Images 2-5 are "Evolutions" (higher temp).
-      const currentTemp = isFirstImage ? 0.4 : 0.85; 
+      const currentTemp = isFirstImage ? 0.4 : 1.0; 
 
       console.log(`Generating ${key} (Index: ${loopIndex})...`);
 
