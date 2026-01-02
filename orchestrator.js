@@ -3,6 +3,7 @@ import { generateTrailerText } from "./steps/generateTrailerText.js";
 import { checkTrailerText } from "./steps/checkTrailerText.js";
 import { getStoryTone } from "./steps/storyTone.js";
 import { generateAudio } from "./steps/generateAudio.js";
+import { generateImagePrompts } from "./steps/generateImagePrompts.js";
 
 export async function runOrchestrator(payload = {}) {
   console.log("Orchestrator started", {
@@ -25,6 +26,10 @@ export async function runOrchestrator(payload = {}) {
   
   // 5. Call Gemini to generate audio file
   const audio = await generateAudio({ text: finalTrailerText, tone: storyTone });
+
+  // --- Step 6: Generate Image Prompts (NEW) ---
+  // We pass the final text and ask for 5 sections (default)
+  const imagePrompts = await generateImagePrompts(finalTrailerText, 5);
   
   console.log("Orchestrator completed", {
     title,
@@ -32,6 +37,7 @@ export async function runOrchestrator(payload = {}) {
     trailerText,
     storyTone,
     audio,
+    imagePrompts,
     timestamp: new Date().toISOString(),
   });
 
@@ -41,6 +47,7 @@ export async function runOrchestrator(payload = {}) {
     finalTrailerText,
     storyTone,
     audio,
+    imagePrompts,
     trailerText
   };
 }
