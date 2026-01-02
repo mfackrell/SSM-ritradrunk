@@ -1,16 +1,14 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 import { Storage } from "@google-cloud/storage";
 import fs from "fs";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+// 1. Initialize the NEW SDK
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 const storage = new Storage();
 const bucketName = process.env.GCS_BUCKET_NAME;
 
 export async function generateImages(promptSections) {
-  console.log("Starting Sequential Image Generation (Daisy Chain)...");
-
-  // Use Imagen 3 model
-  const model = genAI.getGenerativeModel({ model: "gemini-3-pro-image" });
+  console.log("Starting Sequential Image Generation (New SDK)...");
 
   const results = {};
   let lastImageBuffer = null;
@@ -19,21 +17,18 @@ export async function generateImages(promptSections) {
   for (const [key, sectionText] of Object.entries(promptSections)) {
     try {
       const isFirstImage = loopIndex === 0;
-      
-      // LOGIC: Image 1 is the "Anchor". Images 2-5 are "Evolutions" (higher temp).
+      // High creativity for follow-up images
       const currentTemp = isFirstImage ? 0.4 : 1.0; 
 
       console.log(`Generating ${key} (Index: ${loopIndex})...`);
 
-      // FIX: Add aspect ratio instruction to the prompt text instead of config
-      const fullPrompt = `Create a whimsical, illustration set in a magical, fantasy world. Use a playful, storybook art style. Focus on creating an enchanting, imaginative atmosphere. Ensure the illustration feels like a scene from a children's storybook based on: ${sectionText}. Generate this image with a 9:16 portrait aspect ratio.`;
+      const fullPrompt = `Create a whimsical, illustration set in a magical, fantasy world. Use a playful, storybook art style. Focus on creating an enchanting, imaginative atmosphere. Ensure the illustration feels like a scene from a children's storybook based on: ${sectionText}. Output at 9:16 aspect ratio.`;
 
-      // Build payload
-      const contentParts = [{ text: fullPrompt }];
+      // 2. Build the Content Parts (New SDK format)
+      const parts = [{ text: fullPrompt }];
 
-      // Attach previous image if it exists (Daisy Chain)
       if (lastImageBuffer) {
-        contentParts.push({
+        parts.push({
           inlineData: {
             data: lastImageBuffer.toString("base64"),
             mimeType: "image/png"
@@ -41,18 +36,24 @@ export async function generateImages(promptSections) {
         });
       }
 
-      const result = await model.generateContent({
-        contents: [{ role: "user", parts: contentParts }],
-        generationConfig: {
-          // aspectRatio: "9:16", <--- REMOVED (Caused the crash)
+      // 3. Call the API (Correct New Syntax)
+      // Note: We use `ai.models.generateContent`, not `model.generateContent`
+      const response = await ai.models.generateContent({
+        model: "gemini-3-pro-image",
+        contents: [
+          {
+            role: "user",
+            parts: parts
+          }
+        ],
+        config: {
           responseModalities: ["IMAGE"],
-          temperature: currentTemp 
+          temperature: currentTemp
         }
       });
 
-      const imagePart = result.response.candidates[0].content.parts.find(
-        p => p.inlineData?.mimeType?.startsWith("image/")
-      );
+      // 4. Extract the Image (New Response Structure)
+      const imagePart = response.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
 
       if (!imagePart) {
         console.warn(`No image generated for ${key}`);
@@ -61,10 +62,8 @@ export async function generateImages(promptSections) {
         continue;
       }
 
-      // Update the buffer for the NEXT iteration
+      // 5. Save & Upload
       lastImageBuffer = Buffer.from(imagePart.inlineData.data, "base64");
-
-      // Save to GCS
       const fileName = `image-${key}-${Date.now()}.png`;
       const tempFilePath = `/tmp/${fileName}`;
       fs.writeFileSync(tempFilePath, lastImageBuffer);
