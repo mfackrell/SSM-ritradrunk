@@ -1,29 +1,19 @@
-import { getSheetRow } from "../lib/googleSheets.js";
+import { getSheetValues } from "../lib/googleSheets.js";
 
-export async function retrieveTitle(context) {
-  const spreadsheetId = process.env.TRAILER_SHEET_ID;
-  const sheetName = "Sheet1";
-  const rowNumber = 2;
-  const columnRange = "A:Z";
+export async function retrieveTitle() {
+  const spreadsheetId = "1M0sAzon8VPBqWVETCbanyFSe6zqb_VCtkEisjQtkao8";
+  const range = "Sheet1!A2:A2";
 
-  const row = await getSheetRow({
-    spreadsheetId,
-    sheetName,
-    rowNumber,
-    columnRange
-  });
+  const values = await getSheetValues(spreadsheetId, range);
 
-  if (!row || row.length === 0) {
-    throw new Error("No data returned from Google Sheets");
+  const title = values?.[0]?.[0];
+
+  if (!title) {
+    throw new Error("No title found in Sheet1!A2");
   }
 
-  context.rawRow = row;
-  context.title = row[0]; // Column A
+  console.log("Retrieved title:", title);
 
-  console.log("TITLE RETRIEVED", {
-    runId: context.runId,
-    title: context.title
-  });
-
-  return context;
+  return title;
 }
+
