@@ -2,7 +2,7 @@ import { retrieveTitle } from "./steps/retrieveTitle.js";
 import { generateTrailerText } from "./steps/generateTrailerText.js";
 import { checkTrailerText } from "./steps/checkTrailerText.js";
 import { getStoryTone } from "./steps/storyTone.js";
-
+import { generateAudio } from "./steps/generateAudio.js";
 
 export async function runOrchestrator(payload = {}) {
   console.log("Orchestrator started", {
@@ -22,12 +22,16 @@ export async function runOrchestrator(payload = {}) {
 
   // 4. Story tone (single word)
   const storyTone = await getStoryTone(title);
+  
+  // 5. Call Gemini to generate audio file
+  generateAudio({ text: finalTrailerText, tone: storyTone });
 
   console.log("Orchestrator completed", {
     title,
     finalTrailerText,
     trailerText,
     storyTone,
+    audio,
     timestamp: new Date().toISOString(),
   });
 
@@ -36,6 +40,7 @@ export async function runOrchestrator(payload = {}) {
     title,
     finalTrailerText,
     storyTone,
+    audio,
     trailerText
   };
 }
