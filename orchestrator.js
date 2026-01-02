@@ -7,53 +7,45 @@ import { generateImagePrompts } from "./steps/generateImagePrompts.js";
 import { generateImages } from "./steps/generateImages.js";
 
 export async function runOrchestrator(payload = {}) {
-  console.log("Orchestrator started", {
-    source: payload.source || "unknown",
-    timestamp: new Date().toISOString(),
-  });
+  console.log("Orchestrator started", { timestamp: new Date().toISOString() });
 
-  // --- Step 1: Retrieve Title (Existing & Working) ---
+  // --- SERIAL STEPS (Must happen in order) ---
+  
+  // 1. Title
   const title = await retrieveTitle();
   
-  // --- Step 2: Generate Trailer Text (New) ---
-  // Pass the title we just got into the next function
+  // 2. Text Generation
   const trailerText = await generateTrailerText(title);
-
-  // 3. Check/Rephrase Text (Zap Step 4)
   const finalTrailerText = await checkTrailerText(trailerText);
 
-  // 4. Story tone (single word)
+  // 3. Metadata & Prep
   const storyTone = await getStoryTone(title);
   
-  // 5. Call Gemini to generate audio file
-  const audio = await generateAudio({ text: finalTrailerText, tone: storyTone });
-
-  // --- Step 6: Generate Image Prompts (NEW) ---
-  // We pass the final text and ask for 5 sections (default)
+  // We generate prompts now because it's nearly instant (just text splitting)
+  // and we need it ready for the image generator.
   const imagePrompts = await generateImagePrompts(finalTrailerText, 5);
 
-  // 6. Generate Images (NEW STEP)
-  // This takes the split text and returns real URLs: { section_1: "https://...", ... }
-  const imageUrls = await generateImages(imagePrompts);
-  
-  console.log("Orchestrator completed", {
-    title,
-    finalTrailerText,
-    trailerText,
-    storyTone,
-    audio,
-    imagePrompts,
-    timestamp: new Date().toISOString(),
-  });
+  // --- PARALLEL STEPS (Run Audio & Images at the same time) ---
+  console.log("Starting parallel generation: Audio + Images...");
+
+  const [audio, imageUrls] = await Promise.all([
+    // Task A: Generate Audio
+    generateAudio({ text: finalTrailerText, tone: storyTone }),
+
+    // Task B: Generate Images (Daisy Chain)
+    generateImages(imagePrompts)
+  ]);
+
+  console.log("Parallel generation complete.");
+  console.log("Orchestrator finished successfully.");
 
   return {
     status: "completed",
     title,
     finalTrailerText,
     storyTone,
-    audio,
-    imagePrompts,
-    imageUrls,
-    trailerText
+    audio,          // Result from Task A
+    imagePrompts,   // Result from Prep step
+    imageUrls       // Result from Task B
   };
 }
