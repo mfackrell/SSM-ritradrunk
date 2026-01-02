@@ -16,7 +16,7 @@ export async function runOrchestrator(payload = {}) {
   const trailerText = await generateTrailerText(title);
 
   // 3. Check/Rephrase Text (Zap Step 4)
-  const finalTrailerText = await checkTrailerText(rawTrailerText);
+  const finalTrailerText = await checkTrailerText(trailerText);
 
   console.log("Orchestrator completed", {
     title,
