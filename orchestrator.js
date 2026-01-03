@@ -38,12 +38,12 @@ export async function runOrchestrator(payload = {}) {
   // --- PARALLEL STEPS (Run Audio & Images at the same time) ---
   console.log("Starting parallel generation: Audio + Images + Book Details...");
 
-  const [audio, imageUrls] = await Promise.all([
+  const [audio, imageUrls, bookDetails] = await Promise.all([
     // Task A: Generate Audio
     generateAudio({ text: finalTrailerText, tone: storyTone }),
 
     // Task B: Generate Images (Daisy Chain)
-    generateImages(imagePrompts)
+    generateImages(imagePrompts),
 
     // Task C: Fetch Book Details (Now running concurrently)
     fetchBookDetails(bookMetadata)
