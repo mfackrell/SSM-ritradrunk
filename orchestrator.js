@@ -8,6 +8,7 @@ import { generateAudio } from "./steps/generateAudio.js";
 import { generateImagePrompts } from "./steps/generateImagePrompts.js";
 import { generateImages } from "./steps/generateImages.js";
 import { requestVideoRender } from "./steps/requestVideoRender.js";
+import { generateDescription } from "./steps/generateDescription.js"; // <--- Import
 
 export async function runOrchestrator(payload = {}) {
   console.log("Orchestrator started", { timestamp: new Date().toISOString() });
@@ -28,8 +29,10 @@ export async function runOrchestrator(payload = {}) {
     getStoryTone(title),
 
     // Task C: Extract Title/Author via GPT-4o (New)
-    extractBookMetadata(title)
+    extractBookMetadata(title)   
   ]);
+
+  console.log("Parallel generation complete.");
   
   // We generate prompts now because it's nearly instant (just text splitting)
   // and we need it ready for the image generator.
@@ -38,7 +41,7 @@ export async function runOrchestrator(payload = {}) {
   // --- PARALLEL STEPS (Run Audio & Images at the same time) ---
   console.log("Starting parallel generation: Audio + Images + Book Details...");
 
-  const [audio, imageUrls, bookDetails] = await Promise.all([
+  const [audio, imageUrls, bookDetails, youtubeData] = await Promise.all([
     // Task A: Generate Audio
     generateAudio({ text: finalTrailerText, tone: storyTone }),
 
@@ -46,7 +49,10 @@ export async function runOrchestrator(payload = {}) {
     generateImages(imagePrompts),
 
     // Task C: Fetch Book Details (Now running concurrently)
-    fetchBookDetails(bookMetadata)
+    fetchBookDetails(bookMetadata),
+
+    // Task D: Generate YouTube Metadata
+    generateDescription(finalTrailerText)
   ]);
 
   console.log("Parallel generation complete.");
@@ -76,6 +82,9 @@ export async function runOrchestrator(payload = {}) {
     storyTone,
     bookMetadata,
     bookDetails,
+    youtubeTitle: youtubeData?.title || null,
+    youtubeDescription: youtubeData?.description || null,
+    youtubeKeywords: youtubeData?.keywords || [],
     audio,    
     imagePrompts,
     renderResult,
