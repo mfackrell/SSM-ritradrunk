@@ -20,15 +20,16 @@ export async function generateImages(promptSections) {
 
       console.log(`Generating ${key} (Index: ${loopIndex})...`);
 
-      // --- THE FIX IS HERE ---
-      // We removed the hardcoded "Whimsical" text. 
-      // Now it uses EXACTLY what came from the previous step.
       const fullPrompt = sectionText; 
 
-      const parts = [{ 
-        text: `Create a whimsical illustration set in a magical, fantasy world. Use a playful, storybook art style. Focus on creating an enchanting, imaginative atmosphere. Ensure the illustration feels like a scene from a children's storybook based on this story section: ${fullPrompt}` 
-      }];
-      
+      // I used backticks (`) here because 'children's' has an apostrophe 
+      // which breaks the single quotes in your original string.
+      const textPart = { 
+        text: `Create a whimsical, illustration set in a magical, fantasy world. Use a playful, storybook art style. Focus on creating an enchanting, imaginative atmosphere. Ensure the illustration feels like a scene from a children's storybook based on this story section: ${fullPrompt}` 
+      };
+
+      const parts = [textPart];
+
       if (lastImageBuffer) {
         parts.push({
           inlineData: {
@@ -38,24 +39,45 @@ export async function generateImages(promptSections) {
         });
       }
 
-      const response = await ai.models.generateContent({
-        model: "gemini-3-pro-image-preview",
-        contents: [{ role: "user", parts: parts }],
-        config: {
-          imageConfig:{ 
-            aspectRatio:"9:16",
-            imageSize: "2K",
-          },      
-          responseModalities: ["IMAGE"],
-          safetySettings: [
-            { category: "HARM_CATEGORY_HARASSMENT", threshold: "OFF" },
-            { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "OFF" },
-            { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "OFF" },
-            { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "OFF" }
-          ],
-          temperature: currentTemp
-        }
-      });
+      // Kept YOUR Model Name and YOUR Safety Settings
+      const config = {
+        imageConfig:{ 
+          aspectRatio:"9:16",
+          imageSize: "2K",
+        },      
+        responseModalities: ["IMAGE"],
+        safetySettings: [
+          { category: "HARM_CATEGORY_HARASSMENT", threshold: "OFF" },
+          { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "OFF" },
+          { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "OFF" },
+          { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "OFF" }
+        ],
+        temperature: currentTemp
+      };
+
+      let response;
+
+      // --- FALLBACK LOGIC ADDED ---
+      try {
+        // Attempt 1: Try with Daisy Chain (Text + Image)
+        response = await ai.models.generateContent({
+          model: "gemini-3-pro-image-preview",
+          contents: [{ role: "user", parts: parts }],
+          config: config
+        });
+
+      } catch (networkError) {
+        console.warn(`Daisy Chain failed for ${key}. Retrying with text only...`);
+        
+        // Attempt 2: Fallback (Text Only)
+        // Uses the same model and settings you requested
+        response = await ai.models.generateContent({
+          model: "gemini-3-pro-image-preview",
+          contents: [{ role: "user", parts: [textPart] }],
+          config: config
+        });
+      }
+      // --- END FALLBACK LOGIC ---
 
       const imagePart = response.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
 
