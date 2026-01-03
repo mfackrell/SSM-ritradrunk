@@ -2,6 +2,7 @@ import { retrieveTitle } from "./steps/retrieveTitle.js";
 import { generateTrailerText } from "./steps/generateTrailerText.js";
 import { checkTrailerText } from "./steps/checkTrailerText.js";
 import { getStoryTone } from "./steps/storyTone.js";
+import { extractBookMetadata } from "./steps/extractBookMetadata.js"; // Added
 import { generateAudio } from "./steps/generateAudio.js";
 import { generateImagePrompts } from "./steps/generateImagePrompts.js";
 import { generateImages } from "./steps/generateImages.js";
@@ -15,12 +16,19 @@ export async function runOrchestrator(payload = {}) {
   // 1. Title
   const title = await retrieveTitle();
   
-  // 2. Text Generation
-  const trailerText = await generateTrailerText(title);
-  const finalTrailerText = await checkTrailerText(trailerText);
+  // 2. PARALLEL: Text Generation, Tone Analysis, AND Book Metadata
+  console.log("Starting parallel generation: Text + Tone + Metadata...");
 
-  // 3. Metadata & Prep
-  const storyTone = await getStoryTone(title);
+  const [finalTrailerText, storyTone, bookMetadata] = await Promise.all([
+    // Task A: Generate & Check Text
+    generateTrailerText(title).then(text => checkTrailerText(text)),
+    
+    // Task B: Get Story Tone (Restored)
+    getStoryTone(title),
+
+    // Task C: Extract Title/Author via GPT-4o (New)
+    extractBookMetadata(title)
+  ]);
   
   // We generate prompts now because it's nearly instant (just text splitting)
   // and we need it ready for the image generator.
@@ -62,6 +70,7 @@ export async function runOrchestrator(payload = {}) {
     title,
     finalTrailerText,
     storyTone,
+    bookMetadata,
     audio,    
     imagePrompts,
     renderResult,
