@@ -5,6 +5,7 @@ import { getStoryTone } from "./steps/storyTone.js";
 import { generateAudio } from "./steps/generateAudio.js";
 import { generateImagePrompts } from "./steps/generateImagePrompts.js";
 import { generateImages } from "./steps/generateImages.js";
+import { requestVideoRender } from "./steps/requestVideoRender.js";
 
 export async function runOrchestrator(payload = {}) {
   console.log("Orchestrator started", { timestamp: new Date().toISOString() });
@@ -37,6 +38,23 @@ export async function runOrchestrator(payload = {}) {
   ]);
 
   console.log("Parallel generation complete.");
+
+  // Send Render Request
+  let renderResult = null;
+  
+  // Verify we have assets before calling the renderer
+  if (audioResult?.fileUrl && imageUrls && Object.keys(imageUrls).length > 0) {
+    try {
+      // We pass the whole audioResult object; the step will extract .fileUrl
+      renderResult = await requestVideoRender(audioResult, imageUrls);
+    } catch (e) {
+      console.error("Video Render failed, but assets were created.");
+      renderResult = { error: e.message };
+    }
+  } else {
+    console.warn("Skipping video render: Missing audio or images.");
+  }
+  
   console.log("Orchestrator finished successfully.");
 
   return {
@@ -44,8 +62,9 @@ export async function runOrchestrator(payload = {}) {
     title,
     finalTrailerText,
     storyTone,
-    audio,          // Result from Task A
-    imagePrompts,   // Result from Prep step
-    imageUrls       // Result from Task B
+    audio, audioResult      
+    imagePrompts,
+    renderResult,
+    imageUrls    
   };
 }
