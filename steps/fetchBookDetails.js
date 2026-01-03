@@ -76,8 +76,8 @@ export async function fetchBookDetails(queryParams) {
       
       // 2. Check Paperback
       const format = (e.physical_format || '').toLowerCase();
-      const isPaperback = format.includes('paperback') || format.includes('softcover');
-
+      // Fix: If format is empty (!format), assume it is a paperback match
+      const isPaperback = !format || format.includes('paperback') || format.includes('softcover');
       // 3. HUNT FOR ID
       let rawId = null;
       
