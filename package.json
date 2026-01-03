@@ -10,7 +10,7 @@
     "express": "^4.19.2",
     "googleapis": "^131.0.0",
     "@google/generative-ai": "^0.21.0",
-    "@google/genai": "^0.0.12",       <--- THIS IS LIKELY MISSING
+    "@google/genai": "^0.0.12",
     "openai": "^4.28.0",
     "@google-cloud/storage": "^7.7.0" 
   }
