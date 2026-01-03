@@ -11,7 +11,7 @@
     "dotenv": "^16.4.5",
     "googleapis": "^140.0.0",
     "@google-cloud/storage": "^7.11.0",
-    "@google/genai": "^0.0.12",
+    "@google/genai": "*",
     "@google/generative-ai": "^0.13.0",
     "openai": "^4.28.0"
   },
