@@ -11,7 +11,7 @@ export async function extractBookMetadata(reference) {
       messages: [
         { 
           role: "user", 
-          content: `return only the book title and author for this  reference: ${reference}\ni.e. title=Adventures_of_huckleberry_finn&author=mark_twain` 
+          content: `return only the book title and author (URL Encoded as in the following example) for this  reference: ${reference}\ni.e. title=Adventures%20of%20huckleberry%20finn&author=mark%20twain` 
         }
       ]
     });
