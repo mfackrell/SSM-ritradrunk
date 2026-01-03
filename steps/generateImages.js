@@ -25,7 +25,7 @@ export async function generateImages(promptSections) {
       // Now it uses EXACTLY what came from the previous step.
       const fullPrompt = sectionText; 
 
-      const parts = [{ text: fullPrompt }];
+      const parts = [{ text:Create a whimsical, illustration set in a magical, fantasy world. Use a playful, storybook art style. Focus on creating an enchanting, imaginative atmosphere. Ensure the illustration feels like a scene from a children's storybook based on this story section:  fullPrompt }];
 
       if (lastImageBuffer) {
         parts.push({
@@ -40,6 +40,10 @@ export async function generateImages(promptSections) {
         model: "gemini-3-pro-image-preview",
         contents: [{ role: "user", parts: parts }],
         config: {
+          imageConfig:{ 
+            aspectRatio:"9:16",
+            imageSize: "2K",
+          },      
           responseModalities: ["IMAGE"],
           safetySettings: [
             { category: "HARM_CATEGORY_HARASSMENT", threshold: "OFF" },
