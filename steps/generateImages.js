@@ -39,7 +39,7 @@ export async function generateImages(promptSections) {
       // 3. Call the API (Correct New Syntax)
       // Note: We use `ai.models.generateContent`, not `model.generateContent`
       const response = await ai.models.generateContent({
-        model: "gemini-3-pro-image",
+        model: "gemini-3-pro-image-preview",
         contents: [
           {
             role: "user",
