@@ -43,10 +43,10 @@ export async function runOrchestrator(payload = {}) {
   let renderResult = null;
   
   // Verify we have assets before calling the renderer
-  if (audioResult?.fileUrl && imageUrls && Object.keys(imageUrls).length > 0) {
+  if (audio?.fileUrl && imageUrls && Object.keys(imageUrls).length > 0) {
     try {
       // We pass the whole audioResult object; the step will extract .fileUrl
-      renderResult = await requestVideoRender(audioResult, imageUrls);
+      renderResult = await requestVideoRender(audio, imageUrls);
     } catch (e) {
       console.error("Video Render failed, but assets were created.");
       renderResult = { error: e.message };
@@ -62,7 +62,7 @@ export async function runOrchestrator(payload = {}) {
     title,
     finalTrailerText,
     storyTone,
-    audio, audioResult      
+    audio,    
     imagePrompts,
     renderResult,
     imageUrls    
