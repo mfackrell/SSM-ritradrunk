@@ -1,4 +1,3 @@
-import fetch from "node-fetch";
 
 export async function fetchBookDetails(queryParams) {
   // queryParams comes from GPT-4o step: "title=...&author=..."
