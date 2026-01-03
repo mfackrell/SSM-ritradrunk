@@ -2,13 +2,12 @@ import { GoogleGenAI } from "@google/genai";
 import { Storage } from "@google-cloud/storage";
 import fs from "fs";
 
-// 1. Initialize the NEW SDK
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 const storage = new Storage();
 const bucketName = process.env.GCS_BUCKET_NAME;
 
 export async function generateImages(promptSections) {
-  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-  console.log("Starting Sequential Image Generation (New SDK)...");
+  console.log("Starting Sequential Image Generation...");
 
   const results = {};
   let lastImageBuffer = null;
@@ -17,14 +16,15 @@ export async function generateImages(promptSections) {
   for (const [key, sectionText] of Object.entries(promptSections)) {
     try {
       const isFirstImage = loopIndex === 0;
-      // High creativity for follow-up images
-      const currentTemp = isFirstImage ? 0.4 : 1.0; 
+      const currentTemp = isFirstImage ? 0.3 : 0.7; 
 
       console.log(`Generating ${key} (Index: ${loopIndex})...`);
 
-      const fullPrompt = `Create a whimsical, illustration set in a magical, fantasy world. Use a playful, storybook art style. Focus on creating an enchanting, imaginative atmosphere. Ensure the illustration feels like a scene from a children's storybook based on: ${sectionText}. Output at 9:16 aspect ratio.`;
+      // --- THE FIX IS HERE ---
+      // We removed the hardcoded "Whimsical" text. 
+      // Now it uses EXACTLY what came from the previous step.
+      const fullPrompt = sectionText; 
 
-      // 2. Build the Content Parts (New SDK format)
       const parts = [{ text: fullPrompt }];
 
       if (lastImageBuffer) {
@@ -36,23 +36,15 @@ export async function generateImages(promptSections) {
         });
       }
 
-      // 3. Call the API (Correct New Syntax)
-      // Note: We use `ai.models.generateContent`, not `model.generateContent`
       const response = await ai.models.generateContent({
         model: "gemini-3-pro-image-preview",
-        contents: [
-          {
-            role: "user",
-            parts: parts
-          }
-        ],
+        contents: [{ role: "user", parts: parts }],
         config: {
           responseModalities: ["IMAGE"],
           temperature: currentTemp
         }
       });
 
-      // 4. Extract the Image (New Response Structure)
       const imagePart = response.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
 
       if (!imagePart) {
@@ -62,7 +54,6 @@ export async function generateImages(promptSections) {
         continue;
       }
 
-      // 5. Save & Upload
       lastImageBuffer = Buffer.from(imagePart.inlineData.data, "base64");
       const fileName = `image-${key}-${Date.now()}.png`;
       const tempFilePath = `/tmp/${fileName}`;
