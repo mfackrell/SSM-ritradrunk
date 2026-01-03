@@ -3,6 +3,7 @@ import { generateTrailerText } from "./steps/generateTrailerText.js";
 import { checkTrailerText } from "./steps/checkTrailerText.js";
 import { getStoryTone } from "./steps/storyTone.js";
 import { extractBookMetadata } from "./steps/extractBookMetadata.js"; // Added
+import { fetchBookDetails } from "./steps/fetchBookDetails.js"; // <--- NEW IMPORT
 import { generateAudio } from "./steps/generateAudio.js";
 import { generateImagePrompts } from "./steps/generateImagePrompts.js";
 import { generateImages } from "./steps/generateImages.js";
@@ -35,7 +36,7 @@ export async function runOrchestrator(payload = {}) {
   const imagePrompts = await generateImagePrompts(finalTrailerText, 5);
 
   // --- PARALLEL STEPS (Run Audio & Images at the same time) ---
-  console.log("Starting parallel generation: Audio + Images...");
+  console.log("Starting parallel generation: Audio + Images + Book Details...");
 
   const [audio, imageUrls] = await Promise.all([
     // Task A: Generate Audio
@@ -43,6 +44,9 @@ export async function runOrchestrator(payload = {}) {
 
     // Task B: Generate Images (Daisy Chain)
     generateImages(imagePrompts)
+
+    // Task C: Fetch Book Details (Now running concurrently)
+    fetchBookDetails(bookMetadata)
   ]);
 
   console.log("Parallel generation complete.");
@@ -71,6 +75,7 @@ export async function runOrchestrator(payload = {}) {
     finalTrailerText,
     storyTone,
     bookMetadata,
+    bookDetails,
     audio,    
     imagePrompts,
     renderResult,
