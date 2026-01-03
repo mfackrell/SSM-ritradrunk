@@ -8,6 +8,7 @@ export async function extractBookMetadata(reference) {
   try {
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
+      temperature: 0,
       messages: [
         { 
           role: "user", 
