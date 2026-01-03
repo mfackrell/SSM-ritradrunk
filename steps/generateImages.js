@@ -3,11 +3,11 @@ import { Storage } from "@google-cloud/storage";
 import fs from "fs";
 
 // 1. Initialize the NEW SDK
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 const storage = new Storage();
 const bucketName = process.env.GCS_BUCKET_NAME;
 
 export async function generateImages(promptSections) {
+  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
   console.log("Starting Sequential Image Generation (New SDK)...");
 
   const results = {};
