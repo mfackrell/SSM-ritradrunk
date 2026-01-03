@@ -67,6 +67,7 @@ export async function fetchBookDetails(queryParams) {
     }
 
     let finalId = null;
+    let fallbackId = null;
 
     for (const e of entries) {
       // 1. Check English
@@ -91,6 +92,11 @@ export async function fetchBookDetails(queryParams) {
           else if (e.identifiers.amazon && e.identifiers.amazon.length > 0) rawId = e.identifiers.amazon[0];
       }
 
+      // CAPTURE FALLBACK: Save the first valid ID we find, just in case
+      if (rawId && !fallbackId) {
+        fallbackId = toIsbn10(rawId);
+      }
+      
       // 4. MATCH
       if (isEnglish && isPaperback && rawId) {
         // CONVERT TO 10-DIGIT BEFORE SAVING
@@ -100,8 +106,9 @@ export async function fetchBookDetails(queryParams) {
     }
 
     console.log(`Processing Complete. Final ISBN-10: ${finalId}`);
-    return { isbn10: finalId };
 
+    return { isbn10: finalId || fallbackId };
+    
   } catch (error) {
     console.error("Failed to fetch/process book details:", error.message);
     return { isbn10: null, error: error.message };
