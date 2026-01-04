@@ -1,35 +1,43 @@
 export async function requestVideoRender(audioData, imageMap) {
-  // 1. Get the Audio URL string (handling the object wrapper)
-  const audioUrl = audioData.fileUrl || audioData;
+  console.log("Preparing Render Payload...");
 
-  // 2. Create the Array of Image URL strings (Sorted Order)
-  // We strictly extract the values (URLs) to ensure we send ["http...", "http..."]
+  // 1. Get Audio URL (Force String)
+  // We handle both cases: if it's the object wrapper OR just the string
+  const audioUrl = audioData?.fileUrl || audioData;
+
+  // 2. Get Image URLs (Force Array of Strings)
+  // We sort by "section_1", "section_2" to ensure order
   const images = Object.keys(imageMap)
     .sort((a, b) => {
-      // Ensure section_1 comes before section_2
-      const numA = parseInt(a.split('_')[1]);
-      const numB = parseInt(b.split('_')[1]);
+      const numA = parseInt(a.replace(/\D/g, '')) || 0; 
+      const numB = parseInt(b.replace(/\D/g, '')) || 0;
       return numA - numB;
     })
-    .map(key => imageMap[key]) // <--- Extracts the URL string
-    .filter(url => url);       // Removes any nulls
+    .map(key => imageMap[key]);
 
-  // 3. Send the exact payload structure you defined
+  // 3. Construct Payload EXACTLY like Zapier
+  const payload = {
+    images: images,
+    audio: audioUrl
+  };
+
+  // Log it so you can verify it matches your Zapier JSON
+  console.log("Sending Payload:", JSON.stringify(payload, null, 2));
+
+  // 4. Send Request
   const response = await fetch("https://ffmpeg-test-710616455963.us-central1.run.app", {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
     },
-    body: JSON.stringify({
-      images: images,  // This is now strictly an Array of Strings
-      audio: audioUrl  // This is a String
-    })
+    body: JSON.stringify(payload)
   });
 
   if (!response.ok) {
-    throw new Error(`Render request failed: ${response.status} ${response.statusText}`);
+    const errorText = await response.text();
+    throw new Error(`Renderer Failed: ${response.status} ${response.statusText} - ${errorText}`);
   }
 
-  // Return the immediate response
+  // Return the raw response (e.g. { url: "..." })
   return await response.json();
 }
