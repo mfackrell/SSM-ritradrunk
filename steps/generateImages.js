@@ -11,32 +11,26 @@ const MAX_RETRIES = 3;
 const REQUEST_TIMEOUT_MS = 45000; // 45 seconds hard limit per attempt
 
 export async function generateImages(promptSections) {
-  console.log("Starting Robust Parallel Image Generation...");
+  console.log("Starting Parallel Image Generation (Model: gemini-2.5-flash)...");
 
-  // Map every section to a resilient retry-able request
   const imagePromises = Object.entries(promptSections).map(async ([key, sectionText]) => {
     
     let attempt = 1;
 
-    // We loop here to handle retries manually
     while (attempt <= MAX_RETRIES) {
-      // Setup logging for this specific attempt
       console.log(`Generating ${key} (Attempt ${attempt}/${MAX_RETRIES})...`);
 
-      // Timer specifically for logging "still waiting" messages to console
       const logTimer = setInterval(() => {
         console.log(`...still waiting for ${key} (Attempt ${attempt})...`);
       }, 15000);
 
       try {
-        const fullPrompt = sectionText;
-
         const textPart = {
-          text: `Create a whimsical, illustration set in a magical, fantasy world. Use a playful, storybook art style. Focus on creating an enchanting, imaginative atmosphere. Ensure the illustration feels like a scene from a children's storybook based on this story section: ${fullPrompt}`
+          text: `Create a whimsical, illustration set in a magical, fantasy world. Use a playful, storybook art style. Focus on creating an enchanting, imaginative atmosphere. Ensure the illustration feels like a scene from a children's storybook based on this story section: ${sectionText}`
         };
 
         const config = {
-          imageConfig: { aspectRatio: "9:16", imageSize: "1K" },
+          imageConfig: { aspectRatio: "9:16", imageSize: "2K" },
           responseModalities: ["IMAGE"],
           safetySettings: [
             { category: "HARM_CATEGORY_HARASSMENT", threshold: "OFF" },
@@ -47,23 +41,21 @@ export async function generateImages(promptSections) {
           temperature: 0.7
         };
 
-        // --- THE FIX: RACE AGAINST A TIMEOUT ---
-        // We create a promise that rejects automatically after 45s
+        // Timeout Promise
         const timeoutPromise = new Promise((_, reject) => 
           setTimeout(() => reject(new Error("Request Timed Out")), REQUEST_TIMEOUT_MS)
         );
 
-        // We race the API call against the timeout
+        // API Call with new model
         const apiCall = ai.models.generateContent({
-          model: "gemini-3-pro-image-preview",
+          model: "gemini-2.5-flash", // Updated to 2.5 Flash
           contents: [{ role: "user", parts: [textPart] }],
           config: config
         });
 
         const response = await Promise.race([apiCall, timeoutPromise]);
-        // ---------------------------------------
 
-        clearInterval(logTimer); // Stop logging if we succeed
+        clearInterval(logTimer);
 
         const imagePart = response.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
 
@@ -89,26 +81,22 @@ export async function generateImages(promptSections) {
         return { key, url: publicUrl };
 
       } catch (error) {
-        clearInterval(logTimer); // Stop logging on error
+        clearInterval(logTimer);
         console.warn(`⚠️ Failed ${key} (Attempt ${attempt}): ${error.message}`);
 
-        // If we have retries left, loop again. Otherwise, give up.
         if (attempt === MAX_RETRIES) {
           console.error(`❌ Permanent Failure for ${key} after ${MAX_RETRIES} attempts.`);
           return { key, url: null };
         }
         
         attempt++;
-        // Optional: Small delay before retrying to let network settle
         await new Promise(r => setTimeout(r, 2000));
       }
     }
   });
 
-  // Wait for all the resilient requests to finish (success or final failure)
   const resultsArray = await Promise.all(imagePromises);
 
-  // Convert array back to object
   const results = {};
   resultsArray.forEach(item => {
     results[item.key] = item.url;
