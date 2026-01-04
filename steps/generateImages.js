@@ -11,7 +11,7 @@ const MAX_RETRIES = 3;
 const REQUEST_TIMEOUT_MS = 45000; // 45 seconds hard limit per attempt
 
 export async function generateImages(promptSections) {
-  console.log("Starting Parallel Image Generation (Model: gemini-2.5-flash)...");
+  console.log("Starting Parallel Image Generation (Model: gemini-2.5-flash-image)...");
 
   const imagePromises = Object.entries(promptSections).map(async ([key, sectionText]) => {
     
