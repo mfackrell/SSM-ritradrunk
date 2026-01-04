@@ -48,7 +48,7 @@ export async function generateImages(promptSections) {
 
         // API Call with new model
         const apiCall = ai.models.generateContent({
-          model: "gemini-2.5-flash", // Updated to 2.5 Flash
+          model: "gemini-2.5-flash-image", // Updated to 2.5 Flash
           contents: [{ role: "user", parts: [textPart] }],
           config: config
         });
