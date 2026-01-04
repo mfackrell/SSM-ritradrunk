@@ -38,7 +38,7 @@ export async function generateImages(promptSections) {
       const config = {
         imageConfig: { 
           aspectRatio: "9:16",
-          imageSize: "1K", // Kept your 2K setting
+          imageSize: "2K", // Kept your 2K setting
         },      
         responseModalities: ["IMAGE"],
         safetySettings: [
