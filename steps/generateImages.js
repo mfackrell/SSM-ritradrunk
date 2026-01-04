@@ -11,11 +11,23 @@ const MAX_RETRIES = 3;
 const REQUEST_TIMEOUT_MS = 45000; // 45 seconds hard limit per attempt
 
 export async function generateImages(promptSections) {
+  if (!process.env.GEMINI_API_KEY) {
+    throw new Error("Missing GEMINI_API_KEY; cannot generate images.");
+  }
+  if (!bucketName) {
+    throw new Error("Missing GCS_BUCKET_NAME; cannot upload generated images.");
+  }
+  if (!promptSections || typeof promptSections !== "object" || !Object.keys(promptSections).length) {
+    throw new Error("promptSections must be a non-empty object of prompts.");
+  }
+
   console.log("Starting Parallel Image Generation (Model: gemini-2.5-flash)...");
+  console.log("[Images] Sections to generate:", Object.keys(promptSections));
 
   const imagePromises = Object.entries(promptSections).map(async ([key, sectionText]) => {
     
     let attempt = 1;
+    let lastError = null;
 
     while (attempt <= MAX_RETRIES) {
       console.log(`Generating ${key} (Attempt ${attempt}/${MAX_RETRIES})...`);
@@ -82,11 +94,12 @@ export async function generateImages(promptSections) {
 
       } catch (error) {
         clearInterval(logTimer);
-        console.warn(`⚠️ Failed ${key} (Attempt ${attempt}): ${error.message}`);
+        lastError = error;
+        console.warn(`⚠️ Failed ${key} (Attempt ${attempt}): ${error?.message || error}`);
 
         if (attempt === MAX_RETRIES) {
-          console.error(`❌ Permanent Failure for ${key} after ${MAX_RETRIES} attempts.`);
-          return { key, url: null };
+          console.error(`❌ Permanent Failure for ${key} after ${MAX_RETRIES} attempts.`, lastError);
+          return { key, url: null, error: lastError?.message || "Unknown error" };
         }
         
         attempt++;
@@ -101,6 +114,12 @@ export async function generateImages(promptSections) {
   resultsArray.forEach(item => {
     results[item.key] = item.url;
   });
+
+  const failedKeys = resultsArray.filter(item => !item.url).map(item => item.key);
+  if (failedKeys.length) {
+    console.error("[Images] One or more generations failed:", failedKeys);
+    throw new Error(`Image generation failed for sections: ${failedKeys.join(", ")}`);
+  }
 
   return results;
 }
