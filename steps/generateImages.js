@@ -1,8 +1,24 @@
+// --- 1. THE TRANSPORT LAYER FIX (Katie's Logic) ---
+// Must be at the very top to configure the global fetch agent before any requests happen.
+import { Agent, setGlobalDispatcher } from "undici";
+
+setGlobalDispatcher(
+  new Agent({
+    connections: 50,          // High enough for parallel requests
+    pipelining: 0,            // Essential for TLS stability
+    keepAliveTimeout: 30_000,
+    keepAliveMaxTimeout: 120_000,
+    headersTimeout: 60_000,
+    bodyTimeout: 120_000
+  })
+);
+
+// --- 2. STANDARD IMPORTS ---
 import { GoogleGenAI } from "@google/genai";
 import { Storage } from "@google-cloud/storage";
 import fs from "fs";
 
-// 1. GLOBAL Client (Crucial for Connection Pooling)
+// Initialize Client (Single Shared Client)
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 const storage = new Storage();
 const bucketName = process.env.GCS_BUCKET_NAME;
@@ -11,24 +27,20 @@ const bucketName = process.env.GCS_BUCKET_NAME;
 const GLOBAL_TIMEOUT_MS = 180000; // 3 minutes total allowed time
 
 export async function generateImages(promptSections) {
-  console.log("Starting Ramp-Up Parallel Image Generation...");
+  console.log("Starting Parallel Image Generation (Undici Optimized Transport)...");
 
   const keys = Object.keys(promptSections);
   const deadline = Date.now() + GLOBAL_TIMEOUT_MS;
 
-  const imagePromises = keys.map(async (key, index) => {
+  // --- 3. PURE PARALLELISM (No Ramp-Up, No Staggering) ---
+  const imagePromises = keys.map(async (key) => {
     const sectionText = promptSections[key];
     
-    // --- RAMP-UP DELAY (The Fix) ---
-    // Start requests 2 seconds apart. 
-    // This allows the network stack to handle the SSL handshakes one by one 
-    // while still keeping the generation parallel.
-    // Index 0 starts at 0s, Index 1 at 2s, Index 2 at 4s...
-    const startDelay = index * 2000; 
-    console.log(`⏳ Scheduling ${key} to start in ${startDelay/1000}s...`);
-    await new Promise(r => setTimeout(r, startDelay));
+    // Katie's analysis: "No ramp-up nonsense."
+    // We trust the configured Agent to handle the connection pool.
 
-    // --- INFINITE RETRY LOOP ---
+    // --- RETRY LOOP ---
+    // Kept only for genuine API blips, not socket crashes.
     while (Date.now() < deadline) {
       try {
         console.log(`🚀 Generating ${key}...`);
@@ -39,7 +51,7 @@ export async function generateImages(promptSections) {
 
         const config = {
           imageConfig: { aspectRatio: "9:16" },
-          // Allow TEXT to prevent hanging on refusals
+          // Safety valve: Allow text so the model can explain refusals instead of hanging
           responseModalities: ["TEXT", "IMAGE"], 
           safetySettings: [
             { category: "HARM_CATEGORY_HARASSMENT", threshold: "OFF" },
@@ -50,7 +62,7 @@ export async function generateImages(promptSections) {
           temperature: 0.7
         };
 
-        // 40s Soft Timeout for each attempt
+        // 40s Soft Timeout (still good practice)
         const requestTimeoutPromise = new Promise((_, reject) => 
           setTimeout(() => reject(new Error("Request Timed Out")), 40000)
         );
@@ -92,15 +104,9 @@ export async function generateImages(promptSections) {
 
       } catch (error) {
         // --- ERROR HANDLER ---
-        const isNetworkError = error.message.includes("fetch failed") || error.message.includes("Timed Out");
-        
-        if (isNetworkError) {
-          console.log(`🔄 Network glitch on ${key}. Retrying in 2s...`);
-          await new Promise(r => setTimeout(r, 2000));
-        } else {
-          console.warn(`⚠️ API Error on ${key}: ${error.message}. Retrying in 5s...`);
-          await new Promise(r => setTimeout(r, 5000));
-        }
+        // With the Undici fix, "fetch failed" should almost never happen now.
+        console.warn(`⚠️ API Error on ${key}: ${error.message}. Retrying in 2s...`);
+        await new Promise(r => setTimeout(r, 2000));
       }
     }
 
