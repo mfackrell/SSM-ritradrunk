@@ -8,7 +8,7 @@ const bucketName = process.env.GCS_BUCKET_NAME;
 
 // Configuration
 const MAX_RETRIES = 3;
-const REQUEST_TIMEOUT_MS = 45000; // 45 seconds hard limit per attempt
+const REQUEST_TIMEOUT_MS = 95000; // 45 seconds hard limit per attempt
 
 export async function generateImages(promptSections) {
   console.log("Starting Parallel Image Generation (Model: gemini-2.5-flash-image)...");
