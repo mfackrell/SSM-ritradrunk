@@ -14,6 +14,15 @@ export async function generateImages(promptSections) {
   let loopIndex = 0;
 
   for (const [key, sectionText] of Object.entries(promptSections)) {
+    
+  // 1. Setup specific logging for this section
+    console.log(`Generating ${key} (Index: ${loopIndex})...`);
+    
+    // Start the "Still Waiting" timer for this specific request
+    const timer = setInterval(() => {
+      console.log(`...still waiting for Gemini Image API on ${key} (30s elapsed)...`);
+    }, 30000);  
+    
     try {
       const isFirstImage = loopIndex === 0;
       const currentTemp = isFirstImage ? 0.3 : 0.7; 
@@ -108,6 +117,9 @@ export async function generateImages(promptSections) {
       console.error(`Failed to generate image for ${key}:`, error.message);
       results[key] = null;
       loopIndex++;
+    }finally {
+      // 2. CRITICAL: STOP THE TIMER
+      clearInterval(timer);
     }
   }
 
