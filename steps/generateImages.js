@@ -19,6 +19,7 @@ export async function generateImages(promptSections) {
   const imagePromises = keys.map(async (key) => {
     const sectionText = promptSections[key];
     let attempt = 1;
+    let lastError = null;
 
     while (attempt <= MAX_RETRIES) {
       console.log(`Generating ${key} (Attempt ${attempt}/${MAX_RETRIES})...`);
@@ -95,7 +96,8 @@ export async function generateImages(promptSections) {
 
       } catch (error) {
         clearInterval(logTimer);
-        console.warn(`⚠️ Failed ${key} (Attempt ${attempt}): ${error.message}`);
+        lastError = error;
+        console.warn(`⚠️ Failed ${key} (Attempt ${attempt}): ${error?.message || error}`);
 
         if (attempt === MAX_RETRIES) {
           console.error(`❌ Permanent Failure for ${key}`);
@@ -115,6 +117,12 @@ export async function generateImages(promptSections) {
   resultsArray.forEach(item => {
     if (item) results[item.key] = item.url;
   });
+
+  const failedKeys = resultsArray.filter(item => !item.url).map(item => item.key);
+  if (failedKeys.length) {
+    console.error("[Images] One or more generations failed:", failedKeys);
+    throw new Error(`Image generation failed for sections: ${failedKeys.join(", ")}`);
+  }
 
   return results;
 }
