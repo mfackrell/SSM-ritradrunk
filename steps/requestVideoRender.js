@@ -1,60 +1,35 @@
-// steps/requestVideoRender.js
-
 export async function requestVideoRender(audioData, imageMap) {
-  console.log("Initiating Video Render Request...");
+  // 1. Get the Audio URL string (handling the object wrapper)
+  const audioUrl = audioData.fileUrl || audioData;
 
-  // 1. Extract the Audio URL
-  // generateAudio returns an object { fileUrl: "...", ... }
-  const audioUrl = audioData?.fileUrl;
-
-  if (!audioUrl) {
-    throw new Error("No audio URL found in audio data.");
-  }
-
-  // 2. Convert the imageMap (Object) to the Array format your Renderer expects
-  // We sort by number to ensure section_1 comes before section_2
-  const sortedImages = Object.keys(imageMap)
+  // 2. Create the Array of Image URL strings (Sorted Order)
+  // We strictly extract the values (URLs) to ensure we send ["http...", "http..."]
+  const images = Object.keys(imageMap)
     .sort((a, b) => {
-      // Extract number from "section_1", "section_10", etc.
+      // Ensure section_1 comes before section_2
       const numA = parseInt(a.split('_')[1]);
       const numB = parseInt(b.split('_')[1]);
       return numA - numB;
     })
-    .map(key => imageMap[key])
-    .filter(url => url !== null); // Remove failed generations
+    .map(key => imageMap[key]) // <--- Extracts the URL string
+    .filter(url => url);       // Removes any nulls
 
-  // 3. Prepare Payload (Matches your Zapier screenshot)
-  const payload = {
-    audio: audioUrl,
-    images: sortedImages
-  };
+  // 3. Send the exact payload structure you defined
+  const response = await fetch("https://ffmpeg-test-710616455963.us-central1.run.app", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      images: images,  // This is now strictly an Array of Strings
+      audio: audioUrl  // This is a String
+    })
+  });
 
-  console.log("Sending Payload to Renderer:", JSON.stringify(payload, null, 2));
-
-  // 4. Send POST Request to your specific Service URL
-  const RENDER_SERVICE_URL = "https://ffmpeg-test-710616455963.us-central1.run.app";
-
-  try {
-    const response = await fetch(RENDER_SERVICE_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(payload)
-    });
-
-    if (!response.ok) {
-      throw new Error(`Renderer responded with ${response.status}: ${response.statusText}`);
-    }
-
-    // Assuming the renderer returns JSON (like a job ID or status)
-    const data = await response.json();
-    console.log("Render Request Successful:", data);
-    
-    return data;
-
-  } catch (error) {
-    console.error("Failed to request video render:", error.message);
-    throw error;
+  if (!response.ok) {
+    throw new Error(`Render request failed: ${response.status} ${response.statusText}`);
   }
+
+  // Return the immediate response
+  return await response.json();
 }
