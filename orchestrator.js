@@ -10,7 +10,6 @@ import { generateImages } from "./steps/generateImages.js";
 import { requestVideoRender } from "./steps/requestVideoRender.js";
 import { generateDescription } from "./steps/generateDescription.js"; // <--- Import
 import { triggerZapier } from "./steps/triggerZapier.js"; // <--- NEW IMPORT
-import { deleteProcessedRow } from "./steps/deleteProcessedRow.js"; // <--- NEW IMPORT
 
 export async function runOrchestrator(payload = {}) {
   console.log("Orchestrator started", { timestamp: new Date().toISOString() });
@@ -78,7 +77,6 @@ export async function runOrchestrator(payload = {}) {
           videoUrl: renderResult.url,               // The full MP4 path
           tags: youtubeData?.keywords || []
         });
-        await deleteProcessedRow();
       }
 
     } catch (e) {
