@@ -43,7 +43,7 @@ export async function generateAudio({ text, tone }) {
   console.log("Generating audio via Gemini TTS", { tone, textLength: text?.length });
 
   // Use the experimental model that supports audio
-  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+  const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro-preview-tts" });
 
   const prompt = `Read the following story text clearly and with a ${tone} tone. Do not add any introductory text, just read the story:\n\n${text}`;
 
