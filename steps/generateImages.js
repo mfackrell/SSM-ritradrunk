@@ -70,7 +70,7 @@ export async function generateImages(promptSections) {
       try {
         // Attempt 1: Try with Daisy Chain (Text + Image)
         response = await ai.models.generateContent({
-          model: "gemini-3-pro-image-preview",
+          model: "gemini-2.5-flash-image",
           contents: [{ role: "user", parts: parts }],
           config: config
         });
@@ -81,7 +81,7 @@ export async function generateImages(promptSections) {
         // Attempt 2: Fallback (Text Only)
         // Uses the same model and settings you requested
         response = await ai.models.generateContent({
-          model: "gemini-3-pro-image-preview",
+          model: "gemini-2.5-flash-image",
           contents: [{ role: "user", parts: [textPart] }],
           config: config
         });
