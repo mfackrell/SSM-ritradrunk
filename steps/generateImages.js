@@ -101,9 +101,17 @@ export async function generateImages(promptSections) {
       const tempFilePath = `/tmp/${fileName}`;
       fs.writeFileSync(tempFilePath, lastImageBuffer);
 
+      // UPDATED: Added retry logic for unstable network connections
       await storage.bucket(bucketName).upload(tempFilePath, {
         destination: fileName,
         metadata: { contentType: "image/png", cacheControl: "public, max-age=31536000" },
+        resumable: false, // Turn off resumable for small files (often more stable)
+        retryOptions: {
+          autoRetry: true,
+          retryDelayMultiplier: 2,
+          totalTimeoutSeconds: 60,
+          maxRetries: 3,
+        }
       });
 
       const publicUrl = `https://storage.googleapis.com/${bucketName}/${fileName}`;
