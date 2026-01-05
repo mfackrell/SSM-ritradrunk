@@ -10,6 +10,7 @@ import { generateImages } from "./steps/generateImages.js";
 import { requestVideoRender } from "./steps/requestVideoRender.js";
 import { generateDescription } from "./steps/generateDescription.js"; // <--- Import
 import { triggerZapier } from "./steps/triggerZapier.js"; // <--- NEW IMPORT
+import { scheduleNextRun } from "./steps/scheduleNextRun.js";
 
 export async function runOrchestrator(payload = {}) {
   console.log("Orchestrator started", { timestamp: new Date().toISOString() });
@@ -76,6 +77,11 @@ export async function runOrchestrator(payload = {}) {
           description: youtubeData?.description || "",
           videoUrl: renderResult.url,               // The full MP4 path
           tags: youtubeData?.keywords || []
+        });
+        // --- NEW: SCHEDULE NEXT RUN (24h Delay) ---
+        await scheduleNextRun({
+             title: title,
+             // pass any other data the NEXT function needs to know
         });
       }
 
