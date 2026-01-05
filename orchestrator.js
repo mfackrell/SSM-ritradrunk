@@ -9,6 +9,7 @@ import { generateImagePrompts } from "./steps/generateImagePrompts.js";
 import { generateImages } from "./steps/generateImages.js";
 import { requestVideoRender } from "./steps/requestVideoRender.js";
 import { generateDescription } from "./steps/generateDescription.js"; // <--- Import
+import { triggerZapier } from "./steps/triggerZapier.js"; // <--- NEW IMPORT
 
 export async function runOrchestrator(payload = {}) {
   console.log("Orchestrator started", { timestamp: new Date().toISOString() });
@@ -58,6 +59,7 @@ export async function runOrchestrator(payload = {}) {
   console.log("Parallel generation complete.");
 
   // Send Render Request
+// Send Render Request
   let renderResult = null;
   
   // Verify we have assets before calling the renderer
@@ -65,8 +67,20 @@ export async function runOrchestrator(payload = {}) {
     try {
       // We pass the whole audioResult object; the step will extract .fileUrl
       renderResult = await requestVideoRender(audio, imageUrls);
+
+      // --- NEW: ZAPIER HANDOFF ---
+      // Only fire if we got a valid URL back from the renderer
+      if (renderResult?.url) {
+        await triggerZapier({
+          title: youtubeData?.title || title,       // Prefer generated title, fallback to raw
+          description: youtubeData?.description || "",
+          videoUrl: renderResult.url,               // The full MP4 path
+          tags: youtubeData?.keywords || []
+        });
+      }
+
     } catch (e) {
-      console.error("Video Render failed, but assets were created.");
+      console.error("Video Render or Zapier handoff failed.");
       renderResult = { error: e.message };
     }
   } else {
