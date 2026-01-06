@@ -7,7 +7,7 @@ export async function scheduleNextRun(originalPayload) {
   const project = "social-stream-webhook"; // From your screenshot
   const queue = "ssm-delay-queue";         // The queue we named earlier
   const location = "us-central1";
-  const url = "https://ssm-ritrareal-710616455963.us-central1.run.app"; // Your NEW service URL
+  const url = "https://ssm-ritrareal-710616455963.us-central1.run.app/run"; // Your NEW service URL
   
   // Construct the parent queue path
   const parent = client.queuePath(project, location, queue);
