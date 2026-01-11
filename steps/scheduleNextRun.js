@@ -1,6 +1,9 @@
 import { CloudTasksClient } from "@google-cloud/tasks";
 
-const client = new CloudTasksClient();
+const client = new CloudTasksClient({
+  apiEndpoint: 'cloudtasks.googleapis.com',
+  timeout: 60000, // Increase internal client timeout to 60s
+});
 
 export async function scheduleNextRun(originalPayload) {
   // Configuration
