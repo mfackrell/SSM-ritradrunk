@@ -10,16 +10,28 @@ export async function requestVideoRender(audioData, imageMap) {
     throw new Error("Renderer payload missing required audio URL");
   }
 
-  // 2) Extract image URLs (must be strings), keep ordering by numeric suffix
-  const images = Object.keys(imageMap || {})
-    .sort((a, b) => {
-      const numA = parseInt(a.replace(/\D/g, '')) || 0; 
-      const numB = parseInt(b.replace(/\D/g, '')) || 0;
-      return numA - numB;
-    })
-    .map(key => imageMap[key])
-    .filter(url => typeof url === "string" && url.length > 0);
+// 2) Ensure exactly 5 images by reusing successfully created ones if any fail
+  const images = [];
+  let lastValidUrl = null;
 
+  for (let i = 1; i <= 5; i++) {
+    const url = imageMap[`section_${i}`];
+    
+    if (typeof url === "string" && url.length > 0) {
+      lastValidUrl = url;
+      images.push(url);
+    } else {
+      console.warn(`[Render] Missing section_${i}. Reusing previous valid image.`);
+      // Use the last successful image, or skip if none have succeeded yet
+      if (lastValidUrl) images.push(lastValidUrl);
+    }
+  }
+
+  // Final safety check: if section_1 failed, the array might still be short.
+  // Backfill from the first successful image found.
+  while (images.length > 0 && images.length < 5) {
+    images.push(images[images.length - 1]);
+  }
   console.log("[Render] Raw imageMap keys:", Object.keys(imageMap || {}));
   console.log("[Render] Filtered image URLs:", images);
 
