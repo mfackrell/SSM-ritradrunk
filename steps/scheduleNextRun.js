@@ -1,9 +1,6 @@
 import { CloudTasksClient } from "@google-cloud/tasks";
 
-const client = new CloudTasksClient({
-  apiEndpoint: 'cloudtasks.googleapis.com',
-  timeout: 60000, // Increase internal client timeout to 60s
-});
+const client = new CloudTasksClient();
 
 export async function scheduleNextRun(originalPayload) {
   // Configuration
@@ -34,12 +31,15 @@ export async function scheduleNextRun(originalPayload) {
   };
 
   try {
-    const [response] = await client.createTask({ parent, task });
-    console.log(`Scheduled next run: ${response.name}`);
-    return response.name;
-  } catch (error) {
-    console.error("Failed to schedule next run:", error);
-    // We don't want to crash the whole flow if scheduling fails, so just return null
-    return null;
+      // Put the timeout here, in the actual request options
+      const [response] = await client.createTask(
+        { parent, task }, 
+        { timeout: 90000 } // 90 seconds
+      );
+      console.log(`Scheduled next run: ${response.name}`);
+      return response.name;
+    } catch (error) {
+      console.error("Failed to schedule next run:", error.message);
+      return null;
+    }
   }
-}
