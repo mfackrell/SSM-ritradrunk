@@ -34,7 +34,7 @@ export async function scheduleNextRun(originalPayload) {
       // Put the timeout here, in the actual request options
       const [response] = await client.createTask(
         { parent, task }, 
-        { timeout: 90000 } // 90 seconds
+        { timeout: 30000 } // 90 seconds
       );
       console.log(`Scheduled next run: ${response.name}`);
       return response.name;
