@@ -39,20 +39,30 @@ export async function requestVideoRender(audioData, imageMap) {
     throw new Error("Renderer payload missing image URLs");
   }
 
-  // 3) Construct Payload (urls only)
+    // 3) Construct Payload (urls only)
   const payload = {
-    images,
-    audio: audioUrl
-  };
+    input: {
+      images,
+      audio: audioUrl,
+      render: {
+        duration: 56,
+        fps: 30,
+        width: 1080,
+        height: 1920,
+        transition: "cut"
+      }
+    }
+  };;
 
   // Log it so you can verify it matches expected JSON
   console.log("[Render] Sending Payload:", JSON.stringify(payload, null, 2));
 
   // 4) Send Request
-  const response = await fetch("https://ffmpeg-test-710616455963.us-central1.run.app", {
+  const response = await fetch("https://api.runpod.ai/v2/ujp39pddbnrfeg/run", {
     method: "POST",
     headers: {
-      "Content-Type": "application/json"
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${process.env.RUNPOD_API_KEY}`
     },
     body: JSON.stringify(payload)
   });
